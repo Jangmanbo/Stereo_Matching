@@ -8,12 +8,13 @@ y=left.shape[0]
 x=left.shape[1]
 
 kernel_size=3
-#div=(kernel_size**3)*2
 
 DSI_size=x-kernel_size+1
+depth_size=y-kernel_size+1
 optimal_size=DSI_size-1
 
 disparity_list=[]
+depth_list=[]
 
 #SSD 계산
 def SSD(i, j, k):
@@ -25,7 +26,7 @@ def SSD(i, j, k):
 
 #DSI 생성해서 disparity 폴더에 저장
 def create_DSI():
-    for i in range(y-kernel_size+1):
+    for i in range(depth_size):
         disparity_list.append([])
         for j in range(DSI_size): #하나의 disparity space image 생성
             disparity_list[i].append([])
@@ -44,7 +45,7 @@ def calculate_cost(DSI):
             sum+=DSI[i][j]
         cost+=sum/DSI_size
     cost/=DSI_size
-    return cost*0.7
+    return cost*0.5
 
 def init_CM(C, M, cost):
     for i in range(1, DSI_size):
@@ -72,15 +73,17 @@ def dynamic_programming(DSI, C, M, cost):
             
 
 def create_path_img(i, j, DSI, M, num):
+    depth_list.append([0])
     while(True):
-        #print(i, j, M[i][j])
         if M[i][j]==1:
             i-=1
             j-=1
             DSI[i][j]=255
+            depth_list[num].insert(0, j-i)
         elif M[i][j]==2:
             i-=1
             DSI[i][j]=255
+            depth_list[num].insert(0, j-i)
         elif M[i][j]==3:
             j-=1
             DSI[i][j]=255
@@ -92,7 +95,8 @@ def create_path_img(i, j, DSI, M, num):
 
 #DSI를 이용해 optimal path 계산
 def calculate_optimalpath():
-    for i in range(DSI_size):
+    for i in range(depth_size):
+        print(i)
         DSI = cv2.imread("disparity/disparity"+str(i)+".jpeg", cv2.IMREAD_GRAYSCALE) # 이미지 불러오기
         cost = calculate_cost(DSI)
 
@@ -101,10 +105,12 @@ def calculate_optimalpath():
 
         init_CM(C, M, cost)
         dynamic_programming(DSI, C, M, cost)
-        create_path_img(optimal_size, optimal_size, DSI, M, i)
+        create_path_img(DSI_size-1, DSI_size-1, DSI, M, i)
 
 #create_DSI()
 calculate_optimalpath()
+arr=np.array(depth_list)
+cv2.imwrite('depth.jpeg', arr)
 
 
 
