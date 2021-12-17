@@ -1,5 +1,4 @@
 import cv2
-import time
 import numpy as np
 
 left = cv2.imread("images/im2.png", cv2.IMREAD_GRAYSCALE) # 이미지 불러오기
@@ -45,46 +44,48 @@ def calculate_cost(DSI):
             sum+=DSI[i][j]
         cost+=sum/DSI_size
     cost/=DSI_size
-    return cost*0.8
+    return cost*0.7
 
-def init_CM(C, M):
+def init_CM(C, M, cost):
     for i in range(1, DSI_size):
-            C[i][0]=10*i
-            M[i][0]=3
-            C[0][i]=10*i
-            M[0][i]=2
+            C[i][0]=cost*i
+            M[i][0]=2
+            C[0][i]=cost*i
+            M[0][i]=3
 
 def dynamic_programming(DSI, C, M, cost):
-    for i in range(optimal_size):
-        for j in range(optimal_size):
-            min1=C[i][j]+DSI[i+1][j+1]
-            min2=C[i][j+1]+cost
-            min3=C[i+1][j]+cost
+    for i in range(1, DSI_size):
+        for j in range(1, DSI_size):
+            min1=C[i-1][j-1]+DSI[i][j]
+            min2=C[i-1][j]+cost
+            min3=C[i][j-1]+cost
             if(i<=j):
-                C[i+1][j+1]=cmin=min(min1, min3)
+                C[i][j]=cmin=min(min1, min2)
             else:
-                C[i+1][j+1]=cmin=min(min1, min2, min3)
+                C[i][j]=cmin=min(min1, min2, min3)
             if (min1==cmin):
-                M[i+1][j+1]=1
-            elif (min3==cmin):
-                M[i+1][j+1]=3
+                M[i][j]=1
             elif (min2==cmin):
-                M[i+1][j+1]=2
+                M[i][j]=2
+            elif (min3==cmin):
+                M[i][j]=3
+            
 
 def create_path_img(i, j, DSI, M, num):
     while(True):
-            if M[i][j]==1:
-                i-=1
-                j-=1
-                DSI[i][j]=255
-            elif M[i][j]==2:
-                j-=1
-                DSI[i][j]=255
-            elif M[i][j]==3:
-                i-=1
-                DSI[i][j]=255
-            else:
-                break
+        #print(i, j, M[i][j])
+        if M[i][j]==1:
+            i-=1
+            j-=1
+            DSI[i][j]=255
+        elif M[i][j]==2:
+            i-=1
+            DSI[i][j]=255
+        elif M[i][j]==3:
+            j-=1
+            DSI[i][j]=255
+        else:
+            break
 
     arr=np.array(DSI)
     cv2.imwrite('path/path'+str(num)+'.jpeg', arr)
@@ -98,11 +99,11 @@ def calculate_optimalpath():
         C = [[0 for col in range(DSI_size)] for row in range(DSI_size)]
         M = [[0 for col in range(DSI_size)] for row in range(DSI_size)]
 
-        init_CM(C, M)
+        init_CM(C, M, cost)
         dynamic_programming(DSI, C, M, cost)
         create_path_img(optimal_size, optimal_size, DSI, M, i)
 
-create_DSI()
+#create_DSI()
 calculate_optimalpath()
 
 
