@@ -9,7 +9,7 @@ y=left.shape[0]
 x=left.shape[1]
 
 kernel_size=3
-div=(kernel_size**3)*2
+#div=(kernel_size**3)*2
 
 DSI_size=x-kernel_size+1
 optimal_size=DSI_size-1
@@ -21,8 +21,8 @@ def SSD(i, j, k):
     ans=0.0
     for a in range(kernel_size):
         for b in range(kernel_size):
-            ans+=((right[i+a][j+b] - left[i+a][k+b])/div)**2    #kernel size에 기반하여 SSD 계산
-    return round(ans)
+            ans+=(right[i+a][j+b] - left[i+a][k+b])**2
+    return (ans**0.5)/(kernel_size*2)
 
 #DSI 생성해서 disparity 폴더에 저장
 def create_DSI():
@@ -45,10 +45,10 @@ def calculate_cost(DSI):
             sum+=DSI[i][j]
         cost+=sum/DSI_size
     cost/=DSI_size
-    return cost/1.5
+    return cost*0.8
 
 def init_CM(C, M):
-    for i in range(1, len(C)):
+    for i in range(1, DSI_size):
             C[i][0]=10*i
             M[i][0]=3
             C[0][i]=10*i
@@ -95,13 +95,14 @@ def calculate_optimalpath():
         DSI = cv2.imread("disparity/disparity"+str(i)+".jpeg", cv2.IMREAD_GRAYSCALE) # 이미지 불러오기
         cost = calculate_cost(DSI)
 
-        C = [[0 for col in range(x-kernel_size+1)] for row in range(x-kernel_size+1)]
-        M = [[0 for col in range(x-kernel_size+1)] for row in range(x-kernel_size+1)]
+        C = [[0 for col in range(DSI_size)] for row in range(DSI_size)]
+        M = [[0 for col in range(DSI_size)] for row in range(DSI_size)]
 
         init_CM(C, M)
         dynamic_programming(DSI, C, M, cost)
         create_path_img(optimal_size, optimal_size, DSI, M, i)
 
+create_DSI()
 calculate_optimalpath()
 
 
