@@ -92,15 +92,15 @@ def create_path_img(i, j, DSI, M, num):
         elif M[i][j]==2:
             i-=1
             DSI[i][j]=255
-            depth_list[num].insert(0, j-i)
+            depth_list[num].insert(0, 0)
         elif M[i][j]==3:
             j-=1
             DSI[i][j]=255
         else:
             break
 
-    arr=np.array(DSI)
-    cv2.imwrite('path'+str(kernel_size)+'/path'+str(num)+'.jpeg', arr)
+    #arr=np.array(DSI)
+    #cv2.imwrite('path'+str(kernel_size)+'/path'+str(num)+'.jpeg', arr)
 
 #DSI를 이용해 optimal path 계산
 def calculate_optimalpath():
@@ -116,8 +116,23 @@ def calculate_optimalpath():
         dynamic_programming(DSI, C, M, cost)
         create_path_img(DSI_size-1, DSI_size-1, DSI, M, i)
 
+def normalize_depth():
+    #max value 찾기
+    max=0
+    for i in range(depth_size):
+        for j in range(DSI_size):
+            if depth_list[i][j] > max:
+                max=depth_list[i][j]
+
+    #depth의 최대값이 255가 되도록 normalization
+    mul=255.0/max
+    for i in range(depth_size):
+        for j in range(DSI_size):
+            depth_list[i][j] *= mul
+
 #create_DSI()
 calculate_optimalpath()
+normalize_depth()
 arr=np.array(depth_list)
 cv2.imwrite('depth'+str(kernel_size)+'.jpeg', arr)
 
