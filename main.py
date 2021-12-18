@@ -34,7 +34,8 @@ def create_DSI():
                 d=SSD(i, j, k)
                 disparity_list[i][j].append(d)
         arr=np.array(disparity_list[i])
-        cv2.imwrite('disparity/disparity'+str(i)+'.jpeg', arr)
+        cv2.imwrite('disparity'+str(kernel_size)+'/disparity'+str(i)+'.jpeg', arr)
+        print(i)
 
 #cost 구하기 (mean of DSI)
 def calculate_cost(DSI):
@@ -49,10 +50,10 @@ def calculate_cost(DSI):
 
 def init_CM(C, M, cost):
     for i in range(1, DSI_size):
-            C[i][0]=cost*i
-            M[i][0]=2
-            C[0][i]=cost*i
-            M[0][i]=3
+        C[i][0]=cost*i
+        M[i][0]=2
+        C[0][i]=cost*i
+        M[0][i]=3
 
 def dynamic_programming(DSI, C, M, cost):
     for i in range(1, DSI_size):
@@ -60,10 +61,7 @@ def dynamic_programming(DSI, C, M, cost):
             min1=C[i-1][j-1]+DSI[i][j]
             min2=C[i-1][j]+cost
             min3=C[i][j-1]+cost
-            if(i<=j):
-                C[i][j]=cmin=min(min1, min2)
-            else:
-                C[i][j]=cmin=min(min1, min2, min3)
+            C[i][j]=cmin=min(min1, min2, min3)
             if (min1==cmin):
                 M[i][j]=1
             elif (min2==cmin):
@@ -75,6 +73,17 @@ def dynamic_programming(DSI, C, M, cost):
 def create_path_img(i, j, DSI, M, num):
     depth_list.append([0])
     while(True):
+        if M[i][j]==0:
+            break
+        if j - i > 64:
+            j-=1
+            DSI[i][j]=255
+            continue
+        elif i >= j:
+            i-=1
+            DSI[i][j]=255
+            depth_list[num].insert(0, j-i)
+            continue
         if M[i][j]==1:
             i-=1
             j-=1
@@ -91,13 +100,13 @@ def create_path_img(i, j, DSI, M, num):
             break
 
     arr=np.array(DSI)
-    cv2.imwrite('path/path'+str(num)+'.jpeg', arr)
+    cv2.imwrite('path'+str(kernel_size)+'/path'+str(num)+'.jpeg', arr)
 
 #DSI를 이용해 optimal path 계산
 def calculate_optimalpath():
     for i in range(depth_size):
         print(i)
-        DSI = cv2.imread("disparity/disparity"+str(i)+".jpeg", cv2.IMREAD_GRAYSCALE) # 이미지 불러오기
+        DSI = cv2.imread("disparity"+str(kernel_size)+"/disparity"+str(i)+".jpeg", cv2.IMREAD_GRAYSCALE) # 이미지 불러오기
         cost = calculate_cost(DSI)
 
         C = [[0 for col in range(DSI_size)] for row in range(DSI_size)]
@@ -110,7 +119,7 @@ def calculate_optimalpath():
 #create_DSI()
 calculate_optimalpath()
 arr=np.array(depth_list)
-cv2.imwrite('depth.jpeg', arr)
+cv2.imwrite('depth'+str(kernel_size)+'.jpeg', arr)
 
 
 
