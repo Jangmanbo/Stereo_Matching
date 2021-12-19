@@ -73,13 +73,11 @@ def dynamic_programming(DSI, C, M, cost):
 def create_path_img(i, j, DSI, M, num):
     depth_list.append([0])
     while(True):
-        if M[i][j]==0:
-            break
         if j - i > 64:
             j-=1
             DSI[i][j]=255
             continue
-        elif i >= j:
+        elif i > j and i != 0:
             i-=1
             DSI[i][j]=255
             depth_list[num].insert(0, j-i)
@@ -130,11 +128,14 @@ def normalize_depth():
         for j in range(DSI_size):
             depth_list[i][j] *= mul
 
+def create_depth_img():
+    arr=np.array(depth_list)
+    cv2.imwrite('depth'+str(kernel_size)+'.jpeg', arr)
+
 #create_DSI()
 calculate_optimalpath()
 normalize_depth()
-arr=np.array(depth_list)
-cv2.imwrite('depth'+str(kernel_size)+'.jpeg', arr)
+create_depth_img()
 
 
 
