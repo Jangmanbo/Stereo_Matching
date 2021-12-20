@@ -8,6 +8,8 @@ y=left.shape[0]
 x=left.shape[1]
 
 kernel_size=3
+cost_degree=0.05
+criteria_right=0    #1이면 right 이미지가 기준, 0이면 left 이미지가 기준
 
 DSI_size=x-kernel_size+1
 depth_size=y-kernel_size+1
@@ -22,7 +24,7 @@ def SSD(i, j, k):
     for a in range(kernel_size):
         for b in range(kernel_size):
             ans+=(right[i+a][j+b] - left[i+a][k+b])**2
-    return (ans**0.5)/(kernel_size*2)
+    return (ans**0.5)/(kernel_size*1.5)
 
 #DSI 생성해서 disparity 폴더에 저장
 def create_DSI():
@@ -46,7 +48,7 @@ def calculate_cost(DSI):
             sum+=DSI[i][j]
         cost+=sum/DSI_size
     cost/=DSI_size
-    return cost*0.5
+    return cost*cost_degree
 
 def init_CM(C, M, cost):
     for i in range(1, DSI_size):
@@ -72,30 +74,57 @@ def dynamic_programming(DSI, C, M, cost):
 
 def create_path_img(i, j, DSI, M, num):
     depth_list.append([0])
-    while(True):
-        if j - i > 64:
-            j-=1
-            DSI[i][j]=255
-            continue
-        elif i > j and i != 0:
-            i-=1
-            DSI[i][j]=255
-            depth_list[num].insert(0, j-i)
-            continue
-        if M[i][j]==1:
-            i-=1
-            j-=1
-            DSI[i][j]=255
-            depth_list[num].insert(0, j-i)
-        elif M[i][j]==2:
-            i-=1
-            DSI[i][j]=255
-            depth_list[num].insert(0, 0)
-        elif M[i][j]==3:
-            j-=1
-            DSI[i][j]=255
-        else:
-            break
+    if criteria_right:  #right 이미지로 depth image 생성
+        while(True):
+            if j - i > 64:
+                j-=1
+                DSI[i][j]=255
+                continue
+            elif i > j and i != 0:
+                i-=1
+                DSI[i][j]=255
+                depth_list[num].insert(0, j-i)
+                continue
+            if M[i][j]==1:
+                i-=1
+                j-=1
+                DSI[i][j]=255
+                depth_list[num].insert(0, j-i)
+            elif M[i][j]==2:
+                i-=1
+                DSI[i][j]=255
+                depth_list[num].insert(0, 0)
+            elif M[i][j]==3:
+                j-=1
+                DSI[i][j]=255
+            else:
+                break
+    else:   #left 이미지로 depth image 생성
+        while(True):
+            if j - i > 64:
+                j-=1
+                DSI[i][j]=255
+                depth_list[num].insert(0, 0)
+                continue
+            elif i > j and i != 0:
+                i-=1
+                DSI[i][j]=255
+                continue
+            if M[i][j]==1:
+                i-=1
+                j-=1
+                DSI[i][j]=255
+                depth_list[num].insert(0, j-i)
+            elif M[i][j]==2:
+                i-=1
+                DSI[i][j]=255
+            elif M[i][j]==3:
+                j-=1
+                DSI[i][j]=255
+                depth_list[num].insert(0, 0)
+            else:
+                break
+
 
     #arr=np.array(DSI)
     #cv2.imwrite('path'+str(kernel_size)+'/path'+str(num)+'.jpeg', arr)
@@ -132,10 +161,29 @@ def create_depth_img():
     arr=np.array(depth_list)
     cv2.imwrite('depth'+str(kernel_size)+'.jpeg', arr)
 
+def horizontal_hole_filling():
+    for i in range(depth_size):
+        for j in reversed(range(DSI_size - 1)):
+            #occlusion인 경우 오른쪽 depth value로 filling
+            if depth_list[i][j] == 0:
+                depth_list[i][j] = depth_list[i][j + 1]
+
+def vertical_hole_filling():
+    for i in range(DSI_size):
+        for j in (range(1, depth_size)):
+            #occlusion인 경우 위쪽 depth value로 filling
+            if depth_list[j][i] == 0:
+                depth_list[j][i] = depth_list[j - 1][i]
+
 #create_DSI()
 calculate_optimalpath()
 normalize_depth()
-create_depth_img()
+arr=np.array(depth_list)
+cv2.imwrite('depth'+str(kernel_size)+'_'+str(cost_degree)+'.jpeg', arr)
+horizontal_hole_filling()
+arr=np.array(depth_list)
+cv2.imwrite('depth'+str(kernel_size)+'_'+str(cost_degree)+'_filling'+'.jpeg', arr)
+
 
 
 
