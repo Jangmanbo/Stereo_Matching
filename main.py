@@ -46,18 +46,18 @@ def normalize_kernel(kernel):
     #새 리스트를 생성하여 리턴
     new_kernel=[[0 for col in range(kernel_size)] for row in range(kernel_size)]
 
-    #평균 구하기
+    #커널 내 픽셀값의 평균 구하기
     mean=0
     for i in range(kernel_size):
         for j in range(kernel_size):
-            mean+=kernel[i][j]
-    mean /= kernel_size**2
+            mean+=kernel[i][j]  #각 커널값을 더함
+    mean /= kernel_size**2  #커널 개수로 나눔->평균
 
     #평균을 0으로 맞추고 분산 구하기
     sum=0
     for i in range(kernel_size):
         for j in range(kernel_size):
-            new_kernel[i][j] = (kernel[i][j] - mean)
+            new_kernel[i][j] = (kernel[i][j] - mean)    #각 픽셀값에 평균을 빼서 평균을 0으로
             sum+=new_kernel[i][j] ** 2
     variance=sum**0.5   #분산
 
@@ -79,9 +79,9 @@ def create_DSI():
         for j in range(DSI_size): #하나의 disparity space image 생성
             disparity_list[i].append([])
             for k in range(DSI_size):
-                d=NCC(i, j, k)
+                d=SSD(i, j, k)
                 disparity_list[i][j].append(d)
-        #폴더에 저장
+        #disparity 폴더에 저장
         arr=np.array(disparity_list[i])
         cv2.imwrite('disparity'+str(kernel_size)+'/disparity'+str(i)+'.jpeg', arr)
         print(i)
@@ -109,9 +109,9 @@ def init_CM(C, M, cost):
 def dynamic_programming(DSI, C, M, cost):
     for i in range(1, DSI_size):
         for j in range(1, DSI_size):
-            min1=C[i-1][j-1]+DSI[i][j]
-            min2=C[i-1][j]+cost
-            min3=C[i][j-1]+cost
+            min1=C[i-1][j-1]+DSI[i][j]  #대각선 이동 시 cost
+            min2=C[i-1][j]+cost         #아래로 이동 시 cost
+            min3=C[i][j-1]+cost         #오른쪽 이동 시 cost
             C[i][j]=cmin=min(min1, min2, min3)  #지금까지의 최소 cost
             if (min1==cmin):    #occlusion이 일어나지 않음
                 M[i][j]=1
@@ -236,7 +236,7 @@ def vertical_hole_filling():
             if depth_list[j][i] == 0:
                 depth_list[j][i] = depth_list[j - 1][i]
 
-#create_DSI()
+create_DSI()
 calculate_optimalpath()
 normalize_depth()
 horizontal_hole_filling()
